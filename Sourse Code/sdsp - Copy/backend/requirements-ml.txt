@@ -1,0 +1,5 @@
+# Optional local multimodal backends. Install with INSTALL_ML=true.
+faster-whisper>=1.1
+sentence-transformers>=3.0
+opencv-python-headless>=4.10
+pillow>=10.0

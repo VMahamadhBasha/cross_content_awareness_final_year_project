@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: sdsp
+      POSTGRES_PASSWORD: sdsp
+      POSTGRES_DB: sdsp
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sdsp"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        INSTALL_ML: ${INSTALL_ML:-false}
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://sdsp:sdsp@postgres:5432/sdsp
+      REDIS_URL: redis://redis:6379/0
+    volumes: [models:/app/models]
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports: ["3000:3000"]
+    depends_on: [backend]
+
+volumes:
+  pgdata:
+  models:
